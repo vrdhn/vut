@@ -1,34 +1,34 @@
-package main
+package core
 
 // Generate one or more Tools
 // e.g. Multiple Audio Cards or Monitors
 type Factory interface {
 
 	// Get the unique name, and tags of this factory
-	identity() (string, []string)
+	Identity() (string, []string)
 
 	// check if required commands/hardware is available
-	check() bool
+	Check() bool
 
 	// generate the Tools
-	tools() []Tool
+	Devices() []Device
 }
 
 // Tool is a single .. well, tool
-type Tool interface {
+type Device interface {
 
 	// Get the unique name, and tags of this tool
-	identity() (string, []string)
+	Identity() (string, []string)
 
 	// to get identity of factory if needed
-	factoryIdentity() (string, []string)
+	FactoryIdentity() (string, []string)
 
 	// for cli mode, display the range/domain as string
-	domain() string
+	Domain() string
 
 	// for cli mode, display the 'value' as string
-	value() string
+	Value() string
 
 	// for cli mode, update the 'value', if parsable by tool
-	set(value string) (string, error)
+	Set(value string) (string, error)
 }

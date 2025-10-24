@@ -1,4 +1,4 @@
-package main
+package utils
 
 // home grown logger, stores message so that gui can display
 
