@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"strings"
 	"vut/core"
-	"vut/parser"
-	"vut/utils"
 )
 
 const BRIGHTNESSCTL_VER = 0.5
@@ -18,11 +16,11 @@ func BrightnessFactory() factoryBrightness {
 }
 
 type brightnessDevice struct {
-	Name     string `csv:"0"`
-	Type     string `csv:"1"`
-	Current  int    `csv:"2"`
-	Percent  string `csv:"3"`
-	MaxValue int    `csv:"4"`
+	Name     string
+	Type     string
+	Current  int
+	Percent  string
+	MaxValue int
 }
 
 func (factoryBrightness) Identity() (string, []string) {
@@ -31,7 +29,7 @@ func (factoryBrightness) Identity() (string, []string) {
 
 func (factoryBrightness) Check() []error {
 	var errs []error
-	ver, err := utils.CommandOutput("brightnessctl --version",
+	ver, err := CommandOutput("brightnessctl --version",
 		func(s string) (float64, error) {
 			return strconv.ParseFloat(strings.TrimSpace(s), 64)
 		})
@@ -48,9 +46,9 @@ func (factoryBrightness) Check() []error {
 }
 
 func (factoryBrightness) Devices() ([]core.Device, error) {
-	devices, err := utils.CommandOutput[[]brightnessDevice](
+	devices, err := CommandOutput(
 		"brightnessctl --machine-readable --list",
-		parser.ParseCSVIntoStructs)
+		csvParser[brightnessDevice](','))
 
 	if err != nil {
 		return nil, err
@@ -86,14 +84,15 @@ func (t brightnessDevice) Value() string {
 // for cli mode, update the 'value', if parsable by tool
 func (t brightnessDevice) Set(value string) (string, error) {
 
-	devices, err := utils.CommandOutputA[[]brightnessDevice](
+	devices, err := CommandOutputA(
 		[]string{"brightnessctl",
 			"--machine-readable",
 			"--device",
 			t.Name,
 			"set",
 			value},
-		parser.ParseCSVIntoStructs)
+		csvParser[brightnessDevice](','))
+
 	if err != nil || len(*devices) != 1 {
 		return "", err
 	}
