@@ -8,10 +8,10 @@ type Factory interface {
 	Identity() (string, []string)
 
 	// check if required commands/hardware is available
-	Check() bool
+	Check() []error
 
 	// generate the Tools
-	Devices() []Device
+	Devices() ([]Device, error)
 }
 
 // Tool is a single .. well, tool

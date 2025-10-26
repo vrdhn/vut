@@ -29,40 +29,38 @@ func (factoryBrightness) Identity() (string, []string) {
 	return "brightness", []string{"brightness", "display", "monitor"}
 }
 
-func (factoryBrightness) Check() bool {
-	out, ok := utils.CommandOutput("brightnessctl", "--version")
-	if !ok {
-		return false
-	}
-
-	ver, err := strconv.ParseFloat(strings.TrimSpace(out), 64)
+func (factoryBrightness) Check() []error {
+	var errs []error
+	ver, err := utils.CommandOutput("brightnessctl --version",
+		func(s string) (float64, error) {
+			return strconv.ParseFloat(strings.TrimSpace(s), 64)
+		})
 	if err != nil {
-		utils.LogError("brightnessctl" + ": Error finding version :" + out)
-		return false
+		errs = append(errs, err)
+		return errs
 	}
-	if ver < BRIGHTNESSCTL_VER {
-		utils.LogError("brightnessctl" + ": Expected version >= 0.5, got" + out)
-		return false
+	if *ver < BRIGHTNESSCTL_VER {
+		errs = append(errs,
+			fmt.Errorf("brightnessctl : Expected version >= 0.5, got %d", ver))
+		return errs
 	}
-	return true
+	return errs
 }
 
-func (factoryBrightness) Devices() []core.Device {
-	out, ok := utils.CommandOutput("brightnessctl", "--machine-readable", "--list")
-	if !ok {
-		return nil
-	}
-	devices, err := parser.ParseCSVIntoStructs[brightnessDevice](out)
+func (factoryBrightness) Devices() ([]core.Device, error) {
+	devices, err := utils.CommandOutput[[]brightnessDevice](
+		"brightnessctl --machine-readable --list",
+		parser.ParseCSVIntoStructs)
+
 	if err != nil {
-		utils.LogError("Error parsing CSV")
-		return nil
+		return nil, err
 	}
 	var ret []core.Device
-	for _, device := range devices {
+	for _, device := range *devices {
 		ret = append(ret, device)
 
 	}
-	return ret
+	return ret, nil
 }
 
 // Get the unique name, and tags of this tool
@@ -87,22 +85,17 @@ func (t brightnessDevice) Value() string {
 
 // for cli mode, update the 'value', if parsable by tool
 func (t brightnessDevice) Set(value string) (string, error) {
-	//_, err := ParseValue(t.MaxValue, value)
-	//if err != nil {
-	//	LogError("Can't parse input: " + value)
-	//	return "", err
-	//}
 
-	out, ok := utils.CommandOutput("brightnessctl", "--machine-readable", "--device="+t.Name,
-		"set", value)
-	if !ok {
-		return "", fmt.Errorf("can't set")
-	}
-
-	devices, err := parser.ParseCSVIntoStructs[brightnessDevice](out)
-	if err != nil || len(devices) != 1 {
-		utils.LogError("Error parsing CSV")
+	devices, err := utils.CommandOutputA[[]brightnessDevice](
+		[]string{"brightnessctl",
+			"--machine-readable",
+			"--device",
+			t.Name,
+			"set",
+			value},
+		parser.ParseCSVIntoStructs)
+	if err != nil || len(*devices) != 1 {
 		return "", err
 	}
-	return string(devices[0].Current), nil
+	return strconv.Itoa((*devices)[0].Current), nil
 }

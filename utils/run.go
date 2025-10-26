@@ -2,12 +2,41 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"os/exec"
+	"strings"
 	"syscall"
 )
 
+// Runs a command and transform it's output with customer parser.
+// takes space seperated
+func CommandOutput[T any](cmdArgs string, xform func(string) (T, error)) (*T, error) {
+	parts := strings.Split(cmdArgs, " ")
+	return CommandOutputA(parts, xform)
+}
+
+func CommandOutputA[T any](cmdArgs []string, xform func(string) (T, error)) (*T, error) {
+	name := cmdArgs[0]
+	args := cmdArgs[1:]
+	stdout, stderr, retcode, err := runCommand(name, args)
+	if err != nil {
+		return nil, fmt.Errorf("%s: Error Running : %s", name, err.Error())
+	}
+	if retcode != 0 {
+		return nil, fmt.Errorf("%s : Error running : ret code is not 0, is %d", name, retcode)
+	}
+	if stderr != "" {
+		return nil, fmt.Errorf("%s : Error running : stderr :%s", name, stderr)
+	}
+	ret, err := xform(stdout)
+	if err != nil {
+		return nil, fmt.Errorf("%s : Error xforming : %s", name, err.Error())
+	}
+	return &ret, nil
+}
+
 // RunCommand executes a command and returns stdout, stderr, exit code, and error.
-func RunCommand(name string, args []string) (stdout, stderr string, retcode int, err error) {
+func runCommand(name string, args []string) (stdout, stderr string, retcode int, err error) {
 	// Create command
 	cmd := exec.Command(name, args...)
 
@@ -39,22 +68,4 @@ func RunCommand(name string, args []string) (stdout, stderr string, retcode int,
 	stderr = errBuf.String()
 
 	return
-}
-
-func CommandOutput(name string, args ...string) (string, bool) {
-
-	stdout, stderr, retcode, err := RunCommand(name, args)
-	if err != nil {
-		LogError(name + ": Error running : " + err.Error())
-		return "", false
-	}
-	if retcode != 0 {
-		LogError(name + ": Error running : ret code is not 0, is " + string(retcode))
-		return "", false
-	}
-	if stderr != "" {
-		LogError(name + ": Error running : stderr :" + stderr)
-		return "", false
-	}
-	return stdout, true
 }
