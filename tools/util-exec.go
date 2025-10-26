@@ -69,3 +69,7 @@ func runCommand(name string, args []string) (stdout, stderr string, retcode int,
 
 	return
 }
+
+func identity(x string) (string, error) {
+	return x, nil
+}
