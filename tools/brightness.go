@@ -55,7 +55,7 @@ func (factoryBrightness) Devices() ([]core.Device, error) {
 	}
 	var ret []core.Device
 	for _, device := range *devices {
-		ret = append(ret, device)
+		ret = append(ret, &device)
 
 	}
 	return ret, nil
@@ -82,7 +82,7 @@ func (t brightnessDevice) Value() string {
 }
 
 // for cli mode, update the 'value', if parsable by tool
-func (t brightnessDevice) Set(value string) (string, error) {
+func (t *brightnessDevice) Set(value string) (string, error) {
 
 	devices, err := CommandOutputA(
 		[]string{"brightnessctl",
@@ -96,5 +96,6 @@ func (t brightnessDevice) Set(value string) (string, error) {
 	if err != nil || len(*devices) != 1 {
 		return "", err
 	}
+	t.Current = (*devices)[0].Current
 	return strconv.Itoa((*devices)[0].Current), nil
 }

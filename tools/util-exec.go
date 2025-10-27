@@ -8,6 +8,10 @@ import (
 	"syscall"
 )
 
+const (
+	DEBUG = true
+)
+
 // Runs a command and transform it's output with customer parser.
 // takes space seperated
 func CommandOutput[T any](cmdArgs string, xform func(string) (T, error)) (*T, error) {
@@ -18,7 +22,26 @@ func CommandOutput[T any](cmdArgs string, xform func(string) (T, error)) (*T, er
 func CommandOutputA[T any](cmdArgs []string, xform func(string) (T, error)) (*T, error) {
 	name := cmdArgs[0]
 	args := cmdArgs[1:]
+	if DEBUG {
+		fmt.Printf("RUN: %s %v\n", name, args)
+	}
 	stdout, stderr, retcode, err := runCommand(name, args)
+	if DEBUG {
+		if err != nil {
+			fmt.Printf("ERR: %v\n", err)
+		}
+		if retcode != 0 {
+			fmt.Printf("COD: %d\n", retcode)
+		}
+		if stderr != "" {
+			fmt.Printf("ERR: %s\n", stderr)
+		}
+		for _, line := range strings.Split(stdout, "\n") {
+			if line != "" {
+				fmt.Printf("OUT:     %s\n", line)
+			}
+		}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("%s: Error Running : %s", name, err.Error())
 	}
@@ -31,6 +54,9 @@ func CommandOutputA[T any](cmdArgs []string, xform func(string) (T, error)) (*T,
 	ret, err := xform(stdout)
 	if err != nil {
 		return nil, fmt.Errorf("%s : Error xforming : %s", name, err.Error())
+	}
+	if DEBUG {
+		fmt.Printf("GOT: %v\n", ret)
 	}
 	return &ret, nil
 }
