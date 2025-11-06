@@ -33,23 +33,6 @@ type nmWifiGeneral struct {
 	Metered      string
 }
 
-// Takes simplistic approach of split by ':'
-func parseNmcliGeneral(in string) (nmWifiGeneral, error) {
-	parts := strings.Split(in, ":")
-	if len(parts) != 7 {
-		return nmWifiGeneral{}, fmt.Errorf("Can't parse nmcli --terse general output: %s", in)
-	}
-	return nmWifiGeneral{
-		State:        parts[0],
-		Connectivity: parts[1],
-		WifiHw:       parts[2],
-		Wifi:         parts[3],
-		WWanHw:       parts[4],
-		WWan:         parts[5],
-		Metered:      parts[6],
-	}, nil
-}
-
 // check if required commands/hardware is available
 func (nmWifiFactory) Check() []error {
 
@@ -111,7 +94,7 @@ func (nmWifiFactory) Devices() ([]core.Device, error) {
 		}
 	}
 
-	return []core.Device{nmWifiDevice{device, choices, active}}, nil
+	return []core.Device{&nmWifiDevice{device, choices, active}}, nil
 }
 
 // Get the unique name, and tags of this tool
@@ -135,7 +118,7 @@ func (d nmWifiDevice) Value() string {
 }
 
 // for cli mode, update the 'value', if parsable by tool
-func (d nmWifiDevice) Set(value string) (string, error) {
+func (d *nmWifiDevice) Set(value string) (string, error) {
 	var cmd []string
 	if value == "" || value == "-" {
 		if d.Active != "" {

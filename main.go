@@ -14,6 +14,7 @@ func getFactories() []core.Factory {
 	return []core.Factory{
 		tools.BrightnessFactory(),
 		tools.NMWifiFactory(),
+		tools.DarkmodeFactory(),
 	}
 }
 
