@@ -68,12 +68,14 @@ func (d *deviceDarkmode) Set(value string) (string, error) {
 	val := "default"
 	ret := "light"
 	mxMode := "leuven"
+	footSig := "-USR1"
 	d.isDark = false
 	if value == "on" || value == "dark" || value == "true" || value == "1" {
 		val = "prefer-dark"
 		d.isDark = true
 		ret = "dark"
 		mxMode = "leuven-dark"
+		footSig = "-USR2"
 	}
 	_, err := CommandOutputA(
 		[]string{"gsettings", "set", "org.gnome.desktop.interface", "color-scheme", val},
@@ -87,6 +89,17 @@ func (d *deviceDarkmode) Set(value string) (string, error) {
 				"(load-theme '" + mxMode + ")"},
 			identity)
 	}
+	foots, _ := CommandOutput("pgrep foot", words)
+	for _, ps := range *foots {
+		_, _ = CommandOutputA(
+			[]string{"kill", footSig, ps}, identity)
+	}
+
+	// Handle foot, assumes [colors] is light, and [colors2] is dark
 
 	return ret, err
+}
+
+func words(in string) ([]string, error) {
+	return strings.Fields(in), nil
 }
